@@ -2,11 +2,16 @@ import 'dotenv/config';
 import './database/connectDB.js';
 import express from "express";
 import authRouter from './routes/auth.route.js'
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 app.use('/api/v1/auth', authRouter); 
+
+// Solo de ejemplo del login index...
+app.use(express.static('public'))
 
 // app.get('/', (req, res) => {
 //     res.json({ ok: true });
