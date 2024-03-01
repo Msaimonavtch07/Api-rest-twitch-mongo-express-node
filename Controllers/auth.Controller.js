@@ -1,6 +1,5 @@
 //import {validationResult } from 'express-validator'
 import { User } from "../models/User.js";
-import jwt from "jsonwebtoken"; 
 import { generateToken } from "../utils/TokenManager.js";
 import { generateRefreshToken } from "../utils/TokenManager.js"; 
 
@@ -23,7 +22,10 @@ export const register = async(req, res) => {
         await user.save()
 
         // Generar el JWT
-        return res.status(201).json({ ok: true });
+        const {token, expiresIn} = generateToken(user._id)
+        generateRefreshToken(user.id, res);
+
+        return res.status(201).json({token, expiresIn});
 
     } catch (error) {
         console.log(error.code)
@@ -82,33 +84,35 @@ export const tokenRefresh = (req, res) => {
     
     try {
 
-        const refreshTokenCookies = req.cookies.refreshToken
-        if(!refreshTokenCookies) throw new Error('NO existe el token...')
+        // const refreshTokenCookies = req.cookies.refreshToken
+        // if(!refreshTokenCookies) throw new Error('NO existe el token...')
 
-        const {uid} = jwt.verify(refreshTokenCookies, process.env.JWT_SECRET); 
-        const {token, expiresIn} = generateToken(uid)
+        // const {uid} = jwt.verify(refreshTokenCookies, process.env.JWT_SECRET); 
+        const {token, expiresIn} = generateToken(req.uid);
 
         return res.json({token, expiresIn});
 
     } catch (error) {
         console.log(error);
 
-        const TokenVerificationErros = {
-            "invalid signature": 'la firma del JWT no es valida',
-            "jwt expired": 'jwt expirado',
-            "invalid token": 'token no validado',
-            "No Bearer": 'utiliza formato Bearer',
-            "jwt malformed": 'formato no valido...',
-        }
+        return res.status(500).json({ error: 'Error del tokenRefresh...😨' });
 
-        return res
-            .status(401)
-            .send({ error: TokenVerificationErros[error.message] });
+        // const TokenVerificationErros = {
+        //     "invalid signature": 'la firma del JWT no es valida',
+        //     "jwt expired": 'jwt expirado',
+        //     "invalid token": 'token no validado',
+        //     "No Bearer": 'utiliza formato Bearer',
+        //     "jwt malformed": 'formato no valido...',
+        // }
+
+        // return res
+        //     .status(401)
+        //     .send({ error: TokenVerificationErros[error.message] });
     };
 
 };
 
 export const logOut = (req, res) => {
-    res.cleanCookies('refreshToken')
-    req.json({ok: true})
+    res.clearCookie('refreshToken');
+    req.json({ok: true});
 };

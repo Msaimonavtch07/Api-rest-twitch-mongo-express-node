@@ -1,49 +1,27 @@
 import {Router} from "express";
 import { infoUser, logOut, login, register, tokenRefresh } from "../Controllers/auth.Controller.js";
-import { body } from "express-validator";
-import { validationResultExpress } from "../middleware/validationResultExpress.js";
+// import { body } from "express-validator";
+// import { validationResultExpress } from "../middleware/validationResultExpress.js";
 import { requireToken } from "../middleware/requireToken.js";
+import { requireRefreshToken } from "../middleware/requireRefreshToken.js";
+import { bodyLoginValidator, bodyRegisterValidator } from "../middleware/validateManager.js";
+
 const router = Router();
 
-router.post('/register', 
-    [
-        body('email', "formato de email incorrecto")
-            .trim()
-            .isEmail()
-            .normalizeEmail(),
-
-        body('passwork', "Minimo 6 caracteres") 
-            .trim()
-            .isLength({ min: 6 }),   
-
-        body('passwork', "formato de passwork incorrecta")
-            .custom((value, {req}) => {
-                if(value !== req.body.repasswork) {
-                    throw new Error('las contraseñas no coinciden'); 
-                }
-                return value;
-            }),
-    ], 
-    validationResultExpress,
-    register
+router.post(
+    '/register', 
+    bodyRegisterValidator, 
+    register,
 );
-router.post('/login', 
-    [
-        body('email', "formato de email incorrecto")
-            .trim()
-            .isEmail()
-            .normalizeEmail(),
 
-        body('passwork', "Minimo 6 caracteres") 
-            .trim()
-            .isLength({ min: 6 }),
-    ] ,
-    validationResultExpress,
+router.post(
+    '/login', 
+    bodyLoginValidator,
     login
 );
 
 router.get('/protected',requireToken , infoUser)
-router.get('/refresh', tokenRefresh)
+router.get('/refresh',requireRefreshToken ,tokenRefresh)
 router.get('/logOut', logOut)
 
 export default router; 
